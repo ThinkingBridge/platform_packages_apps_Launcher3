@@ -125,6 +125,7 @@
     <!-- Settings -->
     <string name="settings_about">대하여</string>
     <string name="settings_restart">런처 재시작</string>
+    <string name="settings_interface">인터페이스</string>
     
     <!-- About -->
     <string name="about_version_title">런처 버전</string>
@@ -139,4 +140,11 @@
     <string name="interface_iconpack_current_title">현재 아이콘 팩</string>
     <string name="interface_iconpack_current_summary_default">기본</string>
     <string name="interface_iconpack_chooser_title">아이콘 팩 선택</string>
+    
+    <!-- Preferences -->
+    <string name="pref_workspace_title">워크스페이스 설정</string>
+    <string name="pref_title_workspace_rows">열</string>
+    <string name="pref_title_workspace_cols">세로</string>
+    <string name="pref_title_default_workspace">기본 화면</string>
+    <string name="pref_title_show_search_bar">검색바 보이기</string>
 </resources>

@@ -313,4 +313,11 @@ s -->
     <string name="interface_iconpack_current_title">Current Icon Pack</string>
     <string name="interface_iconpack_current_summary_default">Default</string>
     <string name="interface_iconpack_chooser_title">Choose Icon Pack</string>
+    
+    <!-- Preferences -->
+    <string name="pref_workspace_title">Workspace settings</string>
+    <string name="pref_title_workspace_rows">Rows</string>
+    <string name="pref_title_workspace_cols">Columns</string>
+    <string name="pref_title_default_workspace">Default Screen</string>
+    <string name="pref_title_show_search_bar">Show Search Bar</string>
 </resources>
