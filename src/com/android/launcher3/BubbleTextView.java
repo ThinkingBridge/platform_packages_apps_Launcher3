@@ -16,8 +16,14 @@
 
 package com.android.launcher3;
 
+import java.util.Calendar;
+
 import android.content.Context;
 import android.content.res.Resources;
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Handler;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -31,362 +37,473 @@ import android.view.MotionEvent;
 import android.widget.TextView;
 
 /**
- * TextView that draws a bubble behind the text. We cannot use a LineBackgroundSpan
- * because we want to make the bubble taller than the text and TextView's clip is
- * too aggressive.
+ * TextView that draws a bubble behind the text. We cannot use a
+ * LineBackgroundSpan because we want to make the bubble taller than the text
+ * and TextView's clip is too aggressive.
  */
 public class BubbleTextView extends TextView {
-    static final float SHADOW_LARGE_RADIUS = 4.0f;
-    static final float SHADOW_SMALL_RADIUS = 1.75f;
-    static final float SHADOW_Y_OFFSET = 2.0f;
-    static final int SHADOW_LARGE_COLOUR = 0xDD000000;
-    static final int SHADOW_SMALL_COLOUR = 0xCC000000;
-    static final float PADDING_H = 8.0f;
-    static final float PADDING_V = 3.0f;
+	static final float SHADOW_LARGE_RADIUS = 4.0f;
+	static final float SHADOW_SMALL_RADIUS = 1.75f;
+	static final float SHADOW_Y_OFFSET = 2.0f;
+	static final int SHADOW_LARGE_COLOUR = 0xDD000000;
+	static final int SHADOW_SMALL_COLOUR = 0xCC000000;
+	static final float PADDING_H = 8.0f;
+	static final float PADDING_V = 3.0f;
 
-    private int mPrevAlpha = -1;
+	private int mPrevAlpha = -1;
 
-    private HolographicOutlineHelper mOutlineHelper;
-    private final Canvas mTempCanvas = new Canvas();
-    private final Rect mTempRect = new Rect();
-    private boolean mDidInvalidateForPressedState;
-    private Bitmap mPressedOrFocusedBackground;
-    private int mFocusedOutlineColor;
-    private int mFocusedGlowColor;
-    private int mPressedOutlineColor;
-    private int mPressedGlowColor;
+	private HolographicOutlineHelper mOutlineHelper;
+	private final Canvas mTempCanvas = new Canvas();
+	private final Rect mTempRect = new Rect();
+	private boolean mDidInvalidateForPressedState;
+	private Bitmap mPressedOrFocusedBackground;
+	private int mFocusedOutlineColor;
+	private int mFocusedGlowColor;
+	private int mPressedOutlineColor;
+	private int mPressedGlowColor;
 
-    private int mTextColor;
-    private boolean mShadowsEnabled = true;
-    private boolean mIsTextVisible;
+	private int mTextColor;
+	private boolean mShadowsEnabled = true;
+	private boolean mIsTextVisible;
 
-    private boolean mBackgroundSizeChanged;
-    private Drawable mBackground;
+	private boolean mBackgroundSizeChanged;
+	private Drawable mBackground;
 
-    private boolean mStayPressed;
-    private CheckLongPressHelper mLongPressHelper;
+	private boolean mStayPressed;
+	private CheckLongPressHelper mLongPressHelper;
+	private boolean isCalendar = false;
+	private boolean isClock = false;
+	private boolean mAttached = false;
 
-    public BubbleTextView(Context context) {
-        super(context);
-        init();
-    }
+	Handler mHandler = new Handler();
 
-    public BubbleTextView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
+	public BubbleTextView(Context context) {
+		super(context);
+		init();
+	}
 
-    public BubbleTextView(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
-        init();
-    }
+	public BubbleTextView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		init();
+	}
 
-    public void onFinishInflate() {
-        super.onFinishInflate();
+	public BubbleTextView(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+		init();
+	}
 
-        // Ensure we are using the right text size
-        LauncherAppState app = LauncherAppState.getInstance();
-        DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, grid.iconTextSize);
-        setTextColor(getResources().getColor(R.color.workspace_icon_text_color));
-    }
+	public void onFinishInflate() {
+		super.onFinishInflate();
 
-    private void init() {
-        mLongPressHelper = new CheckLongPressHelper(this);
-        mBackground = getBackground();
+		// Ensure we are using the right text size
+		LauncherAppState app = LauncherAppState.getInstance();
+		DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
+		setTextSize(TypedValue.COMPLEX_UNIT_SP, grid.iconTextSize);
+		setTextColor(getResources().getColor(R.color.workspace_icon_text_color));
+	}
 
-        mOutlineHelper = HolographicOutlineHelper.obtain(getContext());
+	private void init() {
+		mLongPressHelper = new CheckLongPressHelper(this);
+		mBackground = getBackground();
 
-        final Resources res = getContext().getResources();
-        mFocusedOutlineColor = mFocusedGlowColor = mPressedOutlineColor = mPressedGlowColor =
-            res.getColor(R.color.outline_color);
+		mOutlineHelper = HolographicOutlineHelper.obtain(getContext());
 
-        setShadowLayer(SHADOW_LARGE_RADIUS, 0.0f, SHADOW_Y_OFFSET, SHADOW_LARGE_COLOUR);
-    }
+		final Resources res = getContext().getResources();
+		mFocusedOutlineColor = mFocusedGlowColor = mPressedOutlineColor = mPressedGlowColor = res
+				.getColor(R.color.outline_color);
 
-    public void applyFromShortcutInfo(ShortcutInfo info, IconCache iconCache) {
-        Bitmap b = info.getIcon(iconCache);
-        LauncherAppState app = LauncherAppState.getInstance();
-        DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
+		setShadowLayer(SHADOW_LARGE_RADIUS, 0.0f, SHADOW_Y_OFFSET,
+				SHADOW_LARGE_COLOUR);
+	}
 
-        setCompoundDrawables(null,
-                Utilities.createIconDrawable(b), null, null);
-        setCompoundDrawablePadding((int) ((grid.folderIconSizePx - grid.iconSizePx) / 2f));
-        setText(info.title);
-        setTag(info);
-    }
+	public void applyFromShortcutInfo(ShortcutInfo info, IconCache iconCache) {
+		Bitmap b = info.getIcon(iconCache);
+		LauncherAppState app = LauncherAppState.getInstance();
+		DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
+		if (info.intent.getComponent().getPackageName()
+				.equals("com.android.deskclock")) {
+			setUpClock();
+		} else if (info.intent.getComponent().getPackageName()
+				.equals("com.google.android.calendar")) {
+			setUpCalendar();
+		} else {
+			setCompoundDrawables(null, Utilities.createIconDrawable(b), null,
+					null);
+			setCompoundDrawablePadding((int) ((grid.folderIconSizePx - grid.iconSizePx) / 2f));
+		}
+		setText(info.title);
+		setTag(info);
+	}
 
-    @Override
-    protected boolean setFrame(int left, int top, int right, int bottom) {
-        if (getLeft() != left || getRight() != right || getTop() != top || getBottom() != bottom) {
-            mBackgroundSizeChanged = true;
-        }
-        return super.setFrame(left, top, right, bottom);
-    }
+	public void setUpClock() {
+		isClock = true;
+		updateClock();
+	}
 
-    @Override
-    protected boolean verifyDrawable(Drawable who) {
-        return who == mBackground || super.verifyDrawable(who);
-    }
+	public void setUpCalendar() {
+		isCalendar = true;
+		updateCalendar();
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(Intent.ACTION_DATE_CHANGED);
+		filter.addAction(Intent.ACTION_TIME_CHANGED);
+		filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+		getContext().registerReceiver(mIntentReceiver, filter);
+	}
 
-    @Override
-    public void setTag(Object tag) {
-        if (tag != null) {
-            LauncherModel.checkItemInfo((ItemInfo) tag);
-        }
-        super.setTag(tag);
-    }
+	@Override
+	protected boolean setFrame(int left, int top, int right, int bottom) {
+		if (getLeft() != left || getRight() != right || getTop() != top
+				|| getBottom() != bottom) {
+			mBackgroundSizeChanged = true;
+		}
+		return super.setFrame(left, top, right, bottom);
+	}
 
-    @Override
-    protected void drawableStateChanged() {
-        if (isPressed()) {
-            // In this case, we have already created the pressed outline on ACTION_DOWN,
-            // so we just need to do an invalidate to trigger draw
-            if (!mDidInvalidateForPressedState) {
-                setCellLayoutPressedOrFocusedIcon();
-            }
-        } else {
-            // Otherwise, either clear the pressed/focused background, or create a background
-            // for the focused state
-            final boolean backgroundEmptyBefore = mPressedOrFocusedBackground == null;
-            if (!mStayPressed) {
-                mPressedOrFocusedBackground = null;
-            }
-            if (isFocused()) {
-                if (getLayout() == null) {
-                    // In some cases, we get focus before we have been layed out. Set the
-                    // background to null so that it will get created when the view is drawn.
-                    mPressedOrFocusedBackground = null;
-                } else {
-                    mPressedOrFocusedBackground = createGlowingOutline(
-                            mTempCanvas, mFocusedGlowColor, mFocusedOutlineColor);
-                }
-                mStayPressed = false;
-                setCellLayoutPressedOrFocusedIcon();
-            }
-            final boolean backgroundEmptyNow = mPressedOrFocusedBackground == null;
-            if (!backgroundEmptyBefore && backgroundEmptyNow) {
-                setCellLayoutPressedOrFocusedIcon();
-            }
-        }
+	@Override
+	protected boolean verifyDrawable(Drawable who) {
+		return who == mBackground || super.verifyDrawable(who);
+	}
 
-        Drawable d = mBackground;
-        if (d != null && d.isStateful()) {
-            d.setState(getDrawableState());
-        }
-        super.drawableStateChanged();
-    }
+	@Override
+	public void setTag(Object tag) {
+		if (tag != null) {
+			LauncherModel.checkItemInfo((ItemInfo) tag);
+		}
+		super.setTag(tag);
+	}
 
-    /**
-     * Draw this BubbleTextView into the given Canvas.
-     *
-     * @param destCanvas the canvas to draw on
-     * @param padding the horizontal and vertical padding to use when drawing
-     */
-    private void drawWithPadding(Canvas destCanvas, int padding) {
-        final Rect clipRect = mTempRect;
-        getDrawingRect(clipRect);
+	@Override
+	protected void drawableStateChanged() {
+		if (isPressed()) {
+			// In this case, we have already created the pressed outline on
+			// ACTION_DOWN,
+			// so we just need to do an invalidate to trigger draw
+			if (!mDidInvalidateForPressedState) {
+				setCellLayoutPressedOrFocusedIcon();
+			}
+		} else {
+			// Otherwise, either clear the pressed/focused background, or create
+			// a background
+			// for the focused state
+			final boolean backgroundEmptyBefore = mPressedOrFocusedBackground == null;
+			if (!mStayPressed) {
+				mPressedOrFocusedBackground = null;
+			}
+			if (isFocused()) {
+				if (getLayout() == null) {
+					// In some cases, we get focus before we have been layed
+					// out. Set the
+					// background to null so that it will get created when the
+					// view is drawn.
+					mPressedOrFocusedBackground = null;
+				} else {
+					mPressedOrFocusedBackground = createGlowingOutline(
+							mTempCanvas, mFocusedGlowColor,
+							mFocusedOutlineColor);
+				}
+				mStayPressed = false;
+				setCellLayoutPressedOrFocusedIcon();
+			}
+			final boolean backgroundEmptyNow = mPressedOrFocusedBackground == null;
+			if (!backgroundEmptyBefore && backgroundEmptyNow) {
+				setCellLayoutPressedOrFocusedIcon();
+			}
+		}
 
-        // adjust the clip rect so that we don't include the text label
-        clipRect.bottom =
-            getExtendedPaddingTop() - (int) BubbleTextView.PADDING_V + getLayout().getLineTop(0);
+		Drawable d = mBackground;
+		if (d != null && d.isStateful()) {
+			d.setState(getDrawableState());
+		}
+		super.drawableStateChanged();
+	}
 
-        // Draw the View into the bitmap.
-        // The translate of scrollX and scrollY is necessary when drawing TextViews, because
-        // they set scrollX and scrollY to large values to achieve centered text
-        destCanvas.save();
-        destCanvas.scale(getScaleX(), getScaleY(),
-                (getWidth() + padding) / 2, (getHeight() + padding) / 2);
-        destCanvas.translate(-getScrollX() + padding / 2, -getScrollY() + padding / 2);
-        destCanvas.clipRect(clipRect, Op.REPLACE);
-        draw(destCanvas);
-        destCanvas.restore();
-    }
+	/**
+	 * Draw this BubbleTextView into the given Canvas.
+	 * 
+	 * @param destCanvas
+	 *            the canvas to draw on
+	 * @param padding
+	 *            the horizontal and vertical padding to use when drawing
+	 */
+	private void drawWithPadding(Canvas destCanvas, int padding) {
+		final Rect clipRect = mTempRect;
+		getDrawingRect(clipRect);
 
-    /**
-     * Returns a new bitmap to be used as the object outline, e.g. to visualize the drop location.
-     * Responsibility for the bitmap is transferred to the caller.
-     */
-    private Bitmap createGlowingOutline(Canvas canvas, int outlineColor, int glowColor) {
-        final int padding = mOutlineHelper.mMaxOuterBlurRadius;
-        final Bitmap b = Bitmap.createBitmap(
-                getWidth() + padding, getHeight() + padding, Bitmap.Config.ARGB_8888);
+		// adjust the clip rect so that we don't include the text label
+		clipRect.bottom = getExtendedPaddingTop()
+				- (int) BubbleTextView.PADDING_V + getLayout().getLineTop(0);
 
-        canvas.setBitmap(b);
-        drawWithPadding(canvas, padding);
-        mOutlineHelper.applyExtraThickExpensiveOutlineWithBlur(b, canvas, glowColor, outlineColor);
-        canvas.setBitmap(null);
+		// Draw the View into the bitmap.
+		// The translate of scrollX and scrollY is necessary when drawing
+		// TextViews, because
+		// they set scrollX and scrollY to large values to achieve centered text
+		destCanvas.save();
+		destCanvas.scale(getScaleX(), getScaleY(), (getWidth() + padding) / 2,
+				(getHeight() + padding) / 2);
+		destCanvas.translate(-getScrollX() + padding / 2, -getScrollY()
+				+ padding / 2);
+		destCanvas.clipRect(clipRect, Op.REPLACE);
+		draw(destCanvas);
+		destCanvas.restore();
+	}
 
-        return b;
-    }
+	/**
+	 * Returns a new bitmap to be used as the object outline, e.g. to visualize
+	 * the drop location. Responsibility for the bitmap is transferred to the
+	 * caller.
+	 */
+	private Bitmap createGlowingOutline(Canvas canvas, int outlineColor,
+			int glowColor) {
+		final int padding = mOutlineHelper.mMaxOuterBlurRadius;
+		final Bitmap b = Bitmap.createBitmap(getWidth() + padding, getHeight()
+				+ padding, Bitmap.Config.ARGB_8888);
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        // Call the superclass onTouchEvent first, because sometimes it changes the state to
-        // isPressed() on an ACTION_UP
-        boolean result = super.onTouchEvent(event);
+		canvas.setBitmap(b);
+		drawWithPadding(canvas, padding);
+		mOutlineHelper.applyExtraThickExpensiveOutlineWithBlur(b, canvas,
+				glowColor, outlineColor);
+		canvas.setBitmap(null);
 
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                // So that the pressed outline is visible immediately when isPressed() is true,
-                // we pre-create it on ACTION_DOWN (it takes a small but perceptible amount of time
-                // to create it)
-                if (mPressedOrFocusedBackground == null) {
-                    mPressedOrFocusedBackground = createGlowingOutline(
-                            mTempCanvas, mPressedGlowColor, mPressedOutlineColor);
-                }
-                // Invalidate so the pressed state is visible, or set a flag so we know that we
-                // have to call invalidate as soon as the state is "pressed"
-                if (isPressed()) {
-                    mDidInvalidateForPressedState = true;
-                    setCellLayoutPressedOrFocusedIcon();
-                } else {
-                    mDidInvalidateForPressedState = false;
-                }
+		return b;
+	}
 
-                mLongPressHelper.postCheckForLongPress();
-                break;
-            case MotionEvent.ACTION_CANCEL:
-            case MotionEvent.ACTION_UP:
-                // If we've touched down and up on an item, and it's still not "pressed", then
-                // destroy the pressed outline
-                if (!isPressed()) {
-                    mPressedOrFocusedBackground = null;
-                }
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		// Call the superclass onTouchEvent first, because sometimes it changes
+		// the state to
+		// isPressed() on an ACTION_UP
+		boolean result = super.onTouchEvent(event);
 
-                mLongPressHelper.cancelLongPress();
-                break;
-        }
-        return result;
-    }
+		switch (event.getAction()) {
+		case MotionEvent.ACTION_DOWN:
+			// So that the pressed outline is visible immediately when
+			// isPressed() is true,
+			// we pre-create it on ACTION_DOWN (it takes a small but perceptible
+			// amount of time
+			// to create it)
+			if (mPressedOrFocusedBackground == null) {
+				mPressedOrFocusedBackground = createGlowingOutline(mTempCanvas,
+						mPressedGlowColor, mPressedOutlineColor);
+			}
+			// Invalidate so the pressed state is visible, or set a flag so we
+			// know that we
+			// have to call invalidate as soon as the state is "pressed"
+			if (isPressed()) {
+				mDidInvalidateForPressedState = true;
+				setCellLayoutPressedOrFocusedIcon();
+			} else {
+				mDidInvalidateForPressedState = false;
+			}
 
-    void setStayPressed(boolean stayPressed) {
-        mStayPressed = stayPressed;
-        if (!stayPressed) {
-            mPressedOrFocusedBackground = null;
-        }
-        setCellLayoutPressedOrFocusedIcon();
-    }
+			mLongPressHelper.postCheckForLongPress();
+			break;
+		case MotionEvent.ACTION_CANCEL:
+		case MotionEvent.ACTION_UP:
+			// If we've touched down and up on an item, and it's still not
+			// "pressed", then
+			// destroy the pressed outline
+			if (!isPressed()) {
+				mPressedOrFocusedBackground = null;
+			}
 
-    void setCellLayoutPressedOrFocusedIcon() {
-        if (getParent() instanceof ShortcutAndWidgetContainer) {
-            ShortcutAndWidgetContainer parent = (ShortcutAndWidgetContainer) getParent();
-            if (parent != null) {
-                CellLayout layout = (CellLayout) parent.getParent();
-                layout.setPressedOrFocusedIcon((mPressedOrFocusedBackground != null) ? this : null);
-            }
-        }
-    }
+			mLongPressHelper.cancelLongPress();
+			break;
+		}
+		return result;
+	}
 
-    void clearPressedOrFocusedBackground() {
-        mPressedOrFocusedBackground = null;
-        setCellLayoutPressedOrFocusedIcon();
-    }
+	void setStayPressed(boolean stayPressed) {
+		mStayPressed = stayPressed;
+		if (!stayPressed) {
+			mPressedOrFocusedBackground = null;
+		}
+		setCellLayoutPressedOrFocusedIcon();
+	}
 
-    Bitmap getPressedOrFocusedBackground() {
-        return mPressedOrFocusedBackground;
-    }
+	void setCellLayoutPressedOrFocusedIcon() {
+		if (getParent() instanceof ShortcutAndWidgetContainer) {
+			ShortcutAndWidgetContainer parent = (ShortcutAndWidgetContainer) getParent();
+			if (parent != null) {
+				CellLayout layout = (CellLayout) parent.getParent();
+				layout.setPressedOrFocusedIcon((mPressedOrFocusedBackground != null) ? this
+						: null);
+			}
+		}
+	}
 
-    int getPressedOrFocusedBackgroundPadding() {
-        return mOutlineHelper.mMaxOuterBlurRadius / 2;
-    }
+	void clearPressedOrFocusedBackground() {
+		mPressedOrFocusedBackground = null;
+		setCellLayoutPressedOrFocusedIcon();
+	}
 
-    @Override
-    public void draw(Canvas canvas) {
-        if (!mShadowsEnabled) {
-            super.draw(canvas);
-            return;
-        }
+	Bitmap getPressedOrFocusedBackground() {
+		return mPressedOrFocusedBackground;
+	}
 
-        final Drawable background = mBackground;
-        if (background != null) {
-            final int scrollX = getScrollX();
-            final int scrollY = getScrollY();
+	int getPressedOrFocusedBackgroundPadding() {
+		return mOutlineHelper.mMaxOuterBlurRadius / 2;
+	}
 
-            if (mBackgroundSizeChanged) {
-                background.setBounds(0, 0,  getRight() - getLeft(), getBottom() - getTop());
-                mBackgroundSizeChanged = false;
-            }
+	@Override
+	public void draw(Canvas canvas) {
+		if (!mShadowsEnabled) {
+			super.draw(canvas);
+			return;
+		}
 
-            if ((scrollX | scrollY) == 0) {
-                background.draw(canvas);
-            } else {
-                canvas.translate(scrollX, scrollY);
-                background.draw(canvas);
-                canvas.translate(-scrollX, -scrollY);
-            }
-        }
+		final Drawable background = mBackground;
+		if (background != null) {
+			final int scrollX = getScrollX();
+			final int scrollY = getScrollY();
 
-        // If text is transparent, don't draw any shadow
-        if (getCurrentTextColor() == getResources().getColor(android.R.color.transparent)) {
-            getPaint().clearShadowLayer();
-            super.draw(canvas);
-            return;
-        }
+			if (mBackgroundSizeChanged) {
+				background.setBounds(0, 0, getRight() - getLeft(), getBottom()
+						- getTop());
+				mBackgroundSizeChanged = false;
+			}
 
-        // We enhance the shadow by drawing the shadow twice
-        getPaint().setShadowLayer(SHADOW_LARGE_RADIUS, 0.0f, SHADOW_Y_OFFSET, SHADOW_LARGE_COLOUR);
-        super.draw(canvas);
-        canvas.save(Canvas.CLIP_SAVE_FLAG);
-        canvas.clipRect(getScrollX(), getScrollY() + getExtendedPaddingTop(),
-                getScrollX() + getWidth(),
-                getScrollY() + getHeight(), Region.Op.INTERSECT);
-        getPaint().setShadowLayer(SHADOW_SMALL_RADIUS, 0.0f, 0.0f, SHADOW_SMALL_COLOUR);
-        super.draw(canvas);
-        canvas.restore();
-    }
+			if ((scrollX | scrollY) == 0) {
+				background.draw(canvas);
+			} else {
+				canvas.translate(scrollX, scrollY);
+				background.draw(canvas);
+				canvas.translate(-scrollX, -scrollY);
+			}
+		}
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        if (mBackground != null) mBackground.setCallback(this);
-    }
+		// If text is transparent, don't draw any shadow
+		if (getCurrentTextColor() == getResources().getColor(
+				android.R.color.transparent)) {
+			getPaint().clearShadowLayer();
+			super.draw(canvas);
+			return;
+		}
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        if (mBackground != null) mBackground.setCallback(null);
-    }
+		// We enhance the shadow by drawing the shadow twice
+		getPaint().setShadowLayer(SHADOW_LARGE_RADIUS, 0.0f, SHADOW_Y_OFFSET,
+				SHADOW_LARGE_COLOUR);
+		super.draw(canvas);
+		canvas.save(Canvas.CLIP_SAVE_FLAG);
+		canvas.clipRect(getScrollX(), getScrollY() + getExtendedPaddingTop(),
+				getScrollX() + getWidth(), getScrollY() + getHeight(),
+				Region.Op.INTERSECT);
+		getPaint().setShadowLayer(SHADOW_SMALL_RADIUS, 0.0f, 0.0f,
+				SHADOW_SMALL_COLOUR);
+		super.draw(canvas);
+		canvas.restore();
+	}
 
-    @Override
-    public void setTextColor(int color) {
-        mTextColor = color;
-        super.setTextColor(color);
-    }
+	@Override
+	protected void onAttachedToWindow() {
+		super.onAttachedToWindow();
+		if (mBackground != null)
+			mBackground.setCallback(this);
+		mAttached = true;
+		if (isCalendar) {
+			IntentFilter filter = new IntentFilter();
+			filter.addAction(Intent.ACTION_DATE_CHANGED);
+			filter.addAction(Intent.ACTION_TIME_CHANGED);
+			filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+			getContext().registerReceiver(mIntentReceiver, filter);
+		}
+		if (isClock) {
+			updateClock();
+		}
 
-    public void setShadowsEnabled(boolean enabled) {
-        mShadowsEnabled = enabled;
-        getPaint().clearShadowLayer();
-        invalidate();
-    }
+	}
 
-    public void setTextVisibility(boolean visible) {
-        Resources res = getResources();
-        if (visible) {
-            super.setTextColor(mTextColor);
-        } else {
-            super.setTextColor(res.getColor(android.R.color.transparent));
-        }
-        mIsTextVisible = visible;
-    }
+	@Override
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+		if (mBackground != null)
+			mBackground.setCallback(null);
+		if (isCalendar)
+			getContext().unregisterReceiver(mIntentReceiver);
+		mAttached = false;
+	}
 
-    public boolean isTextVisible() {
-        return mIsTextVisible;
-    }
+	@Override
+	public void setTextColor(int color) {
+		mTextColor = color;
+		super.setTextColor(color);
+	}
 
-    @Override
-    protected boolean onSetAlpha(int alpha) {
-        if (mPrevAlpha != alpha) {
-            mPrevAlpha = alpha;
-            super.onSetAlpha(alpha);
-        }
-        return true;
-    }
+	public void setShadowsEnabled(boolean enabled) {
+		mShadowsEnabled = enabled;
+		getPaint().clearShadowLayer();
+		invalidate();
+	}
 
-    @Override
-    public void cancelLongPress() {
-        super.cancelLongPress();
+	public void setTextVisibility(boolean visible) {
+		Resources res = getResources();
+		if (visible) {
+			super.setTextColor(mTextColor);
+		} else {
+			super.setTextColor(res.getColor(android.R.color.transparent));
+		}
+		mIsTextVisible = visible;
+	}
 
-        mLongPressHelper.cancelLongPress();
-    }
+	public boolean isTextVisible() {
+		return mIsTextVisible;
+	}
+
+	@Override
+	protected boolean onSetAlpha(int alpha) {
+		if (mPrevAlpha != alpha) {
+			mPrevAlpha = alpha;
+			super.onSetAlpha(alpha);
+		}
+		return true;
+	}
+
+	@Override
+	public void cancelLongPress() {
+		super.cancelLongPress();
+
+		mLongPressHelper.cancelLongPress();
+	}
+
+	public void updateClock() {
+		Calendar calendar = Calendar.getInstance();
+		ClockDrawable clock = new ClockDrawable(getContext(),
+				Utilities.sIconTextureHeight,
+				calendar.get(Calendar.HOUR_OF_DAY),
+				calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND));
+		clock.setBounds(0, 0, clock.getIntrinsicWidth(),
+				clock.getIntrinsicHeight());
+		setCompoundDrawables(null, clock, null, null);
+		if (mAttached)
+			mHandler.postDelayed(new Runnable() {
+				public void run() {
+					updateClock();
+				}
+			}, 1000);
+	}
+
+	private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			updateCalendar();
+		}
+	};
+
+	public void updateCalendar() {
+		CalendarDrawable calendar = new CalendarDrawable(getContext(),
+				Utilities.sIconTextureHeight, Calendar.getInstance().get(
+						Calendar.DAY_OF_MONTH));
+		calendar.setBounds(0, 0, calendar.getIntrinsicWidth(),
+				calendar.getIntrinsicHeight());
+		setCompoundDrawables(null, calendar, null, null);
+	}
+
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		if (hasFocus == true) {
+			if (isCalendar)
+				updateCalendar();
+		}
+	}
+
 }

@@ -33,6 +33,7 @@ import java.util.HashMap;
  */
 class AppInfo extends ItemInfo {
     private static final String TAG = "Launcher3.AppInfo";
+    public String packageName;
 
     /**
      * The intent used to start the application.
@@ -70,7 +71,7 @@ class AppInfo extends ItemInfo {
     public AppInfo(PackageManager pm, ResolveInfo info, IconCache iconCache,
             HashMap<Object, CharSequence> labelCache) {
         final String packageName = info.activityInfo.applicationInfo.packageName;
-
+	this.packageName = packageName;
         this.componentName = new ComponentName(packageName, info.activityInfo.name);
         this.container = ItemInfo.NO_ID;
         this.setActivity(componentName,

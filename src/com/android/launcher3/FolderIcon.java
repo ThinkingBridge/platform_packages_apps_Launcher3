@@ -682,4 +682,9 @@ public class FolderIcon extends LinearLayout implements FolderListener {
 
         mLongPressHelper.cancelLongPress();
     }
+
+    @Override
+    public void onAttachedToWindow() {
+	invalidate();
+    }
 }

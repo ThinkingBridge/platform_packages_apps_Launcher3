@@ -532,8 +532,14 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     protected boolean createAndAddShortcut(ShortcutInfo item) {
         final BubbleTextView textView =
             (BubbleTextView) mInflater.inflate(R.layout.application, this, false);
-        textView.setCompoundDrawables(null,
-                Utilities.createIconDrawable(item.getIcon(mIconCache)), null, null);
+        if(item.intent.getComponent().getPackageName().equals("com.android.deskclock")) {
+        	textView.setUpClock();
+        } else if(item.intent.getComponent().getPackageName().equals("com.google.android.calendar")) {
+        	textView.setUpCalendar();
+        } else {
+        	textView.setCompoundDrawables(null,
+                     Utilities.createIconDrawable(item.getIcon(mIconCache)), null, null);
+        }
         textView.setText(item.title);
         textView.setTag(item);
         textView.setTextColor(getResources().getColor(R.color.folder_items_text_color));
