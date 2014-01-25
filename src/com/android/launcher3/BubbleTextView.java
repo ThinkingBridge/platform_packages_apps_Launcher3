@@ -17,6 +17,7 @@
 package com.android.launcher3;
 
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -403,6 +404,7 @@ public class BubbleTextView extends TextView {
 			IntentFilter filter = new IntentFilter();
 			filter.addAction(Intent.ACTION_DATE_CHANGED);
 			filter.addAction(Intent.ACTION_TIME_CHANGED);
+			filter.addAction("android.intent.action.TIME_SET");
 			filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
 			getContext().registerReceiver(mIntentReceiver, filter);
 		}
@@ -476,7 +478,7 @@ public class BubbleTextView extends TextView {
 		if (mAttached)
 			mHandler.postDelayed(new Runnable() {
 				public void run() {
-					updateClock();
+					updateClock();                                     
 				}
 			}, 1000);
 	}
@@ -489,9 +491,10 @@ public class BubbleTextView extends TextView {
 	};
 
 	public void updateCalendar() {
+		GregorianCalendar today = new GregorianCalendar();
+		int month = today.get(today.DAY_OF_MONTH);
 		CalendarDrawable calendar = new CalendarDrawable(getContext(),
-				Utilities.sIconTextureHeight, Calendar.getInstance().get(
-						Calendar.DAY_OF_MONTH));
+				Utilities.sIconTextureHeight, month);
 		calendar.setBounds(0, 0, calendar.getIntrinsicWidth(),
 				calendar.getIntrinsicHeight());
 		setCompoundDrawables(null, calendar, null, null);
