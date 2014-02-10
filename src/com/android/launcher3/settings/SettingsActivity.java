@@ -5,7 +5,7 @@ import android.preference.PreferenceActivity;
 
 import com.android.launcher3.R;
 
-public class LauncherSettingsActivity extends PreferenceActivity {
+public class SettingsActivity extends PreferenceActivity {
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {

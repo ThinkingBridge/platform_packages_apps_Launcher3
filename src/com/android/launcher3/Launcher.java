@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2008 The Android Open Source Project
  * Copyright (C) 2014 The ThinkingBridge Project
@@ -99,7 +98,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.launcher3.DropTarget.DragObject;
-import com.android.launcher3.settings.LauncherSettingsActivity;
+import com.android.launcher3.settings.SettingsActivity;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -980,9 +979,9 @@ public class Launcher extends Activity
     }
 
     protected void startSettings() {
-        // Launch LauncherSettingsActivity
+        // Launch SettingsActivity
         Intent intent = new Intent("android.intent.action.MAIN");
-        intent.setClass(this, LauncherSettingsActivity.class);
+        intent.setClass(this, SettingsActivity.class);
         startActivity(intent);
     }
 
