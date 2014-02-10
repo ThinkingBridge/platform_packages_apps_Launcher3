@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The ThinkingBridge Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +99,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.launcher3.DropTarget.DragObject;
+import com.android.launcher3.settings.LauncherSettingsActivity;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -978,11 +980,10 @@ public class Launcher extends Activity
     }
 
     protected void startSettings() {
-       Intent i = new Intent(android.provider.Settings.ACTION_SETTINGS);
-       startActivity(i);
-       if (mWorkspace.isInOverviewMode()) {
-           mWorkspace.exitOverviewMode(false);
-       }
+        // Launch LauncherSettingsActivity
+        Intent intent = new Intent("android.intent.action.MAIN");
+        intent.setClass(this, LauncherSettingsActivity.class);
+        startActivity(intent);
     }
 
     public interface QSBScroller {
