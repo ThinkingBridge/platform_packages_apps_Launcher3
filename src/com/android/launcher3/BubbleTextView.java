@@ -220,7 +220,7 @@ public class BubbleTextView extends TextView {
 
 	/**
 	 * Draw this BubbleTextView into the given Canvas.
-	 * 
+	 *
 	 * @param destCanvas
 	 *            the canvas to draw on
 	 * @param padding
@@ -478,7 +478,7 @@ public class BubbleTextView extends TextView {
 		if (mAttached)
 			mHandler.postDelayed(new Runnable() {
 				public void run() {
-					updateClock();                                     
+					updateClock();
 				}
 			}, 1000);
 	}
