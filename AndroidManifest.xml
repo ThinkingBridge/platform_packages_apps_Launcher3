@@ -66,7 +66,6 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.SET_WALLPAPER_HINTS" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.BIND_APPWIDGET" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS" />
@@ -155,6 +154,32 @@
             android:name="com.android.launcher3.settings.AboutActivity"
             android:theme="@android:style/Theme.Holo.Light"
             android:label="@string/settings_about"
+            android:icon="@mipmap/ic_launcher_home"
+            android:finishOnCloseSystemDialogs="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Launcher interface -->
+        <activity
+            android:name="com.android.launcher3.settings.InterfaceActivity"
+            android:theme="@android:style/Theme.Holo.Light"
+            android:label="@string/settings_interface"
+            android:icon="@mipmap/ic_launcher_home"
+            android:finishOnCloseSystemDialogs="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Launcher iconpack chooser -->
+        <activity
+            android:name="com.android.launcher3.settings.IconPackChooserActivity"
+            android:theme="@android:style/Theme.Holo.Light"
+            android:label="@string/interface_iconpack_chooser_title"
             android:icon="@mipmap/ic_launcher_home"
             android:finishOnCloseSystemDialogs="true">
             <intent-filter>

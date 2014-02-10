@@ -297,6 +297,8 @@ s -->
     
     <!-- Settings -->
     <string name="settings_about">About</string>
+    <string name="settings_restart">Restart Launcher</string>
+    <string name="settings_interface">Interface</string>
     
     <!-- About -->
     <string name="about_version_title">Launcher Version</string>
@@ -304,4 +306,11 @@ s -->
     <string name="about_developers_summary">\@ThinkingBridge</string>
     <string name="about_license_title">Open Source License</string>
     <string name="about_license_summary">Apache License 2.0</string>
+    
+    <!-- Interface -->
+    <string name="interface_icon">Icon</string>
+    <string name="interface_iconpack_name">Icon Pack</string>
+    <string name="interface_iconpack_current_title">Current Icon Pack</string>
+    <string name="interface_iconpack_current_summary_default">Default</string>
+    <string name="interface_iconpack_chooser_title">Choose Icon Pack</string>
 </resources>
