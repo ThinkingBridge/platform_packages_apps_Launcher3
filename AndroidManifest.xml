@@ -23,6 +23,10 @@
     package="com.android.launcher3"
     android:versionCode="1"
 	android:versionName="1.0">
+	
+    <uses-sdk
+        android:targetSdkVersion="19"
+        android:minSdkVersion="19" />
 
     <permission
         android:name="com.android.launcher3.permission.PRELOAD_WORKSPACE"
