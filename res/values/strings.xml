@@ -294,4 +294,14 @@ s -->
     <string name="wallpaper_button_text">Wallpapers</string>
     <!-- Text for settings button -->
     <string name="settings_button_text">Settings</string>
+    
+    <!-- Settings -->
+    <string name="settings_about">About</string>
+    
+    <!-- About -->
+    <string name="about_version_title">Launcher Version</string>
+    <string name="about_developers_title">Developers</string>
+    <string name="about_developers_summary">\@ThinkingBridge</string>
+    <string name="about_license_title">Open Source License</string>
+    <string name="about_license_summary">Apache License 2.0</string>
 </resources>

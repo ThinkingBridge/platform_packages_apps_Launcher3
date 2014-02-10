@@ -21,7 +21,7 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.launcher3"
-        android:versionCode="1"
+    android:versionCode="1"
 	android:versionName="1.0">
 
     <permission
@@ -73,7 +73,7 @@
 
     <application
         android:name="com.android.launcher3.LauncherApplication"
-        android:label="@string/application_name"
+        android:label="Launcher"
         android:icon="@mipmap/ic_launcher_home"
         android:hardwareAccelerated="true"
         android:largeHeap="@bool/config_largeHeap"
@@ -138,6 +138,19 @@
             android:name="com.android.launcher3.settings.LauncherSettingsActivity"
             android:theme="@android:style/Theme.Holo.Light"
             android:label="@string/settings_button_text"
+            android:icon="@mipmap/ic_launcher_home"
+            android:finishOnCloseSystemDialogs="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Launcher about -->
+        <activity
+            android:name="com.android.launcher3.settings.AboutActivity"
+            android:theme="@android:style/Theme.Holo.Light"
+            android:label="@string/settings_about"
             android:icon="@mipmap/ic_launcher_home"
             android:finishOnCloseSystemDialogs="true">
             <intent-filter>
