@@ -36,6 +36,6 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item.getItemId() == android.R.id.home) finish();
-    	return super;
+    	return super.onOptionsItemSelected(item);
     }
 }
