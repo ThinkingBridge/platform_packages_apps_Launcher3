@@ -2,6 +2,7 @@ package com.android.launcher3.settings;
 
 import android.os.Bundle;
 import android.content.Context;
+import android.view.MenuItem;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.Preference.OnPreferenceClickListener;
@@ -18,16 +19,23 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
 
         mRestart = findPreference(SettingsProvider.KEY_SETTINGS_RESTART);
         mRestart.setOnPreferenceClickListener(this);
+        
+        getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
-    public boolean onPreferenceClick(Preference preference)
-    {
+    public boolean onPreferenceClick(Preference preference) {
         if (preference == mRestart) {
             System.exit(0);
             return true;
         } else {
             return false;
         }
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	if (item.getItemId() == android.R.id.home) finish();
+    	return super;
     }
 }
