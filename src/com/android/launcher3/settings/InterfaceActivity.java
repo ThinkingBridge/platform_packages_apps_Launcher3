@@ -29,7 +29,7 @@ public class InterfaceActivity extends PreferenceActivity implements OnPreferenc
         try {
             mCurrent.setSummary(getPackageManager().getPackageInfo(iconPack, 0).applicationInfo.loadLabel(getPackageManager()));
         } catch (Exception e) {
-        	// ¿îÁö
+        	// Unji
         }
         
         // Show "home"
